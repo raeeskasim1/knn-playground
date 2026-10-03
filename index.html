@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KNN Playground</title>
+<style>
+:root{--ink:#183b35;--muted:#61756e;--line:#dce6df;--paper:#f5f7ee;--a:#d35c43;--b:#227e8b}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 system-ui,sans-serif}main{max-width:1200px;margin:auto;padding:34px 28px}header{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:28px}.brand{font-size:12px;letter-spacing:.14em;font-weight:750;text-transform:uppercase}.tag{border:1px solid var(--line);border-radius:100px;padding:6px 12px;font-size:12px}h1{font-size:clamp(32px,5vw,58px);line-height:1.05;letter-spacing:-.055em;margin:14px 0}h2{font-size:17px;margin:0 0 12px}.intro{max-width:620px;color:var(--muted);margin:0 0 24px}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 295px;gap:20px}.plot,.panel{border:1px solid var(--line);border-radius:20px;background:#fffdf8}.plot{overflow:hidden}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:16px;border-bottom:1px solid var(--line)}button,select,input{font:inherit}button{cursor:pointer;background:#fffdf8;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 12px}button:hover{background:#edf2e8}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #83b5a1;outline-offset:3px}button[aria-pressed=true],.primary{background:var(--ink);color:white;border-color:var(--ink)}button:disabled{opacity:.45;cursor:default}.modes{display:flex;gap:6px;flex-wrap:wrap}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;background:var(--a)}.dot.b{background:var(--b)}canvas{display:block;width:100%;aspect-ratio:7/4.5;touch-action:none;cursor:crosshair}.plot-note{font-size:12px;color:var(--muted);padding:12px 16px;background:#fafbf6;border-top:1px solid var(--line)}.panel{padding:22px}.slider-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.slider-head strong{background:#e9efe3;border-radius:8px;padding:3px 10px}input[type=range]{width:100%;accent-color:var(--ink);margin:0 0 10px}.hint{font-size:12px;color:var(--muted);margin:0 0 18px}.result{margin:22px 0;padding:16px;border-radius:12px;background:#edf2e9}.result span{display:block;font-size:12px;color:var(--muted)}.result strong{font-size:27px}.result p{margin:3px 0;font-size:13px}#neighbors{list-style:none;margin:0;padding:0;font-size:13px}#neighbors li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}.coordinate{border-top:1px solid var(--line);margin-top:20px;padding-top:16px}.coordinate label{display:block;font-size:12px;margin:7px 0}.inputs{display:flex;gap:10px}.inputs input{width:100%;min-width:0;padding:7px;border:1px solid var(--line);border-radius:7px;color:var(--ink)}.coordinate button{width:100%;margin-top:10px}.footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:20px;color:var(--muted);font-size:12px}code{font-family:ui-monospace,monospace}.legend{display:flex;gap:15px}.empty{color:var(--muted)}@media(max-width:800px){main{padding:24px 16px}.workspace{grid-template-columns:1fr}.panel{display:grid;grid-template-columns:1fr 1fr;gap:0 22px}.coordinate{grid-column:1/-1}.result{margin:0 0 20px}.neighbor-section{grid-column:1/-1}header{margin-bottom:18px}.tag{white-space:nowrap}}@media(max-width:420px){.panel{display:block}.result{margin:18px 0}header .tag{display:none}.toolbar{padding:12px}button{padding:8px 10px}}
+</style>
+</head>
+<body><main>
+<header><div class="brand">Little ML Lab / 01</div><span class="tag">Real algorithm · zero dependencies</span></header>
+<h1>Who are your<br>nearest neighbours?</h1>
+<p class="intro">Place a point. Let its neighbours vote. Change <strong>k</strong> and watch a tiny classifier redraw its world.</p>
+<div class="workspace">
+<section class="plot" aria-label="Interactive classifier">
+<div class="toolbar"><div class="modes" role="group" aria-label="Canvas action"><button data-mode="predict" aria-pressed="true">Predict</button><button data-mode="A" aria-pressed="false"><span class="dot"></span>Add A</button><button data-mode="B" aria-pressed="false"><span class="dot b"></span>Add B</button></div><div class="modes"><button id="undo" disabled>Undo</button><button id="clear">Clear</button><button id="reset">New data</button></div></div>
+<canvas id="plot" aria-label="A two-dimensional dataset. Use the coordinate controls below as an alternative to clicking.">Use the coordinate inputs to add or classify points.</canvas>
+<div class="plot-note">Click to predict or add training points. The pale background shows the predicted class across the plane.</div>
+</section>
+<aside class="panel">
+<div><div class="slider-head"><label for="k">Neighbours to consult</label><strong id="k-value">5</strong></div><input id="k" type="range" min="1" max="9" step="2" value="5"><p class="hint">Small k follows local detail. Larger k averages over more neighbours.</p></div>
+<div class="result" aria-live="polite"><span>PREDICTED CLASS</span><strong id="prediction">—</strong><p id="votes">Place a query point.</p></div>
+<div class="neighbor-section"><h2>The voting circle</h2><ol id="neighbors"></ol></div>
+<form class="coordinate" id="coordinate-form"><h2>Try exact coordinates</h2><div class="inputs"><label>X (0–1)<input id="x" type="number" min="0" max="1" step="0.01" value="0.48" required></label><label>Y (0–1)<input id="y" type="number" min="0" max="1" step="0.01" value="0.52" required></label></div><button type="submit" class="primary" id="coordinate-action">Predict this point</button></form>
+</aside></div>
+<div class="footer"><span id="dataset-count"></span><div class="legend"><span><i class="dot"></i>Class A</span><span><i class="dot b"></i>Class B</span></div><span><code>distance → nearest k → majority vote</code></span></div>
+</main>
+<script>
+'use strict';
+const canvas=document.querySelector('#plot'),ctx=canvas.getContext('2d');
+const colors={A:'#d35c43',B:'#227e8b'};
+let points=[],query={x:.48,y:.52},k=5,mode='predict',history=[],seed=17,W=700,H=450;
+function randomGenerator(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function classify(x,y){
+  if(!points.length)return null;
+  const nearest=points.map(p=>({...p,distance:Math.hypot(p.x-x,p.y-y)})).sort((a,b)=>a.distance-b.distance).slice(0,Math.min(k,points.length));
+  const votes={A:0,B:0};nearest.forEach(p=>votes[p.label]++);
+  // On a tied vote, the closest neighbour decides.
+  const label=votes.A===votes.B?nearest[0].label:votes.A>votes.B?'A':'B';
+  return{label,nearest,votes};
+}
+function remember(){history.push({points:points.map(p=>({...p})),query:query?{...query}:null});if(history.length>40)history.shift();}
+function seedData(){const r=randomGenerator(++seed);points=[];for(const label of ['A','B'])for(let i=0;i<16;i++){const center=label==='A'?.30:.70;points.push({x:Math.max(.06,Math.min(.94,center+(r()-.5)*.42)),y:Math.max(.08,Math.min(.92,.5+(r()-.5)*.7)),label});}query={x:.48,y:.52};history=[];draw();}
+function toPixel(p){return{x:28+p.x*(W-56),y:26+(1-p.y)*(H-52)};}
+function draw(){
+  if(!W||!H)return;ctx.clearRect(0,0,W,H);ctx.fillStyle='#fffdf8';ctx.fillRect(0,0,W,H);
+  if(points.length){const cols=46,rows=30;for(let c=0;c<cols;c++)for(let r=0;r<rows;r++){const result=classify((c+.5)/cols,(r+.5)/rows);ctx.fillStyle=result.label==='A'?'#f5e5d9':'#deeeee';ctx.fillRect(28+c*(W-56)/cols,26+(rows-1-r)*(H-52)/rows,(W-56)/cols+1,(H-52)/rows+1);}}
+  ctx.strokeStyle='#b6c7bd';ctx.lineWidth=1;ctx.strokeRect(28,26,W-56,H-52);ctx.font='10px system-ui';ctx.fillStyle='#61756e';ctx.fillText('0',16,H-24);ctx.fillText('1',15,30);ctx.fillText('x →',W-42,H-8);
+  const result=query?classify(query.x,query.y):null;
+  if(result){const q=toPixel(query);ctx.setLineDash([4,5]);ctx.strokeStyle='#6a7f71';result.nearest.forEach(p=>{const v=toPixel(p);ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.lineTo(v.x,v.y);ctx.stroke();});ctx.setLineDash([]);}
+  points.forEach(p=>{const v=toPixel(p);ctx.fillStyle=colors[p.label];ctx.beginPath();ctx.arc(v.x,v.y,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='white';ctx.font='bold 8px system-ui';ctx.textAlign='center';ctx.fillText(p.label,v.x,v.y+3);});ctx.textAlign='left';
+  if(query){const q=toPixel(query);ctx.fillStyle='#183b35';ctx.strokeStyle='white';ctx.lineWidth=3;ctx.beginPath();ctx.arc(q.x,q.y,10,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='white';ctx.font='bold 12px system-ui';ctx.fillText('?',q.x-3,q.y+4);}
+  document.querySelector('#prediction').textContent=result?'Class '+result.label:'—';document.querySelector('#prediction').style.color=result?colors[result.label]:'#183b35';
+  document.querySelector('#votes').textContent=result?`${result.votes[result.label]} of ${result.nearest.length} neighbours voted ${result.label}.`:points.length?'Place a query point.':'Add some training points first.';
+  const list=document.querySelector('#neighbors');list.replaceChildren();
+  if(result)result.nearest.forEach((p,i)=>{const li=document.createElement('li'),a=document.createElement('span'),b=document.createElement('span');a.textContent=`${i+1}. Class ${p.label}`;a.style.color=colors[p.label];b.textContent=`d = ${p.distance.toFixed(3)}`;li.append(a,b);list.append(li);});
+  else{const li=document.createElement('li');li.className='empty';li.textContent='No votes yet.';list.append(li);}
+  document.querySelector('#dataset-count').textContent=`${points.length} training points · 2 features · Euclidean distance`;
+  document.querySelector('#undo').disabled=!history.length;
+}
+function act(x,y){if(mode==='predict')query={x,y};else{remember();points.push({x,y,label:mode});}document.querySelector('#x').value=x.toFixed(2);document.querySelector('#y').value=y.toFixed(2);draw();}
+canvas.addEventListener('pointerdown',e=>{const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left-28)/(W-56),y=1-(e.clientY-r.top-26)/(H-52);if(x>=0&&x<=1&&y>=0&&y<=1)act(x,y);});
+document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{mode=button.dataset.mode;document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));document.querySelector('#coordinate-action').textContent=mode==='predict'?'Predict this point':'Add class '+mode+' point';}));
+document.querySelector('#k').addEventListener('input',e=>{k=Number(e.target.value);document.querySelector('#k-value').textContent=k;draw();});
+document.querySelector('#coordinate-form').addEventListener('submit',e=>{e.preventDefault();act(Number(document.querySelector('#x').value),Number(document.querySelector('#y').value));});
+document.querySelector('#undo').addEventListener('click',()=>{const previous=history.pop();if(previous){points=previous.points;query=previous.query;draw();}});
+document.querySelector('#clear').addEventListener('click',()=>{remember();points=[];query=null;draw();});
+document.querySelector('#reset').addEventListener('click',seedData);
+new ResizeObserver(()=>{const r=canvas.getBoundingClientRect();W=r.width;H=r.height;const dpr=window.devicePixelRatio||1;canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);draw();}).observe(canvas);
+seedData();
+</script></body></html>
